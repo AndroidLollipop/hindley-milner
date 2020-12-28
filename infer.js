@@ -73,6 +73,9 @@ const analyse = (node, env, monomorphic=null) => {
   if (monomorphic === null) {
     monomorphic = {}
   }
+  if (node.type === "Integer") {
+    return Integer
+  }
   if (node.type === "Var") {
     return deepClone(env[node.v], monomorphic)
   }
@@ -108,7 +111,6 @@ const analyse = (node, env, monomorphic=null) => {
     unify(newType, xType)
     return analyse(node.body, newEnv, monomorphic)
   }
-  console.log(node.type)
   throw "EvalError: unknown node type"
 }
 const occursInType = (t, type) => {
@@ -123,7 +125,7 @@ const occursInType = (t, type) => {
 }
 const occursInTypes = (t, types) => {
   for (type of types) {
-    if (occursInTypes(t, type)) {
+    if (occursInType(t, type)) {
       return true
     }
   }
@@ -155,5 +157,10 @@ const unify = (t1, t2) => {
     throw "TypeError: unification failed"
   }
 }
+const newBuiltinEnv = () => ({
+  "increment": makeFunctionType(Integer, Integer),
+  "add": makeFunctionType(Integer, makeFunctionType(Integer, Integer))
+})
 console.log(JSON.stringify(analyse(Lam("x", Lam("y", Var("x"))), newEnv())))
 console.log(JSON.stringify(analyse(Lam("x", Let("x", Var("x"), Lam("y", Var("x"))), newEnv()))))
+console.log(JSON.stringify(analyse(Lam("x", Let("x", Var("x"), Lam("y", App(App(Var("add"), Var("x")), Var("y"))))), newBuiltinEnv())))
